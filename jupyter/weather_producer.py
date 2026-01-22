@@ -1,29 +1,30 @@
 import requests
+import json
 import time
+from kafka import KafkaProducer
 
-API_URL = "https://api.open-meteo.com/v1/forecast"
-LATITUDE = 52.52
-LONGITUDE = 13.41
+KAFKA_BROKER = "kafka:29092"
+KAFKA_TOPIC = "weather_data"
 
-def fetch_weather():
-    response = requests.get(
-        API_URL,
-        params={
-            "latitude": LATITUDE,
-            "longitude": LONGITUDE,
-            "current_weather": "true"
-        },
-        timeout=10
-    )
-    response.raise_for_status()
-    return response.json()["current_weather"]
+producer = KafkaProducer(
+    bootstrap_servers=KAFKA_BROKER,
+    value_serializer=lambda v: json.dumps(v).encode("utf-8")
+)
 
-if __name__ == "__main__":
-    print("Weather API test started...")
-    while True:
-        try:
-            weather = fetch_weather()
-            print("Current weather:", weather)
-        except Exception as e:
-            print("Error:", e)
-        time.sleep(30)
+print("Producer started...")
+
+while True:
+    try:
+        response = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={"latitude": 52.52, "longitude": 13.41, "current_weather": "true"}
+        )
+        data = response.json()["current_weather"]
+        
+        producer.send(KAFKA_TOPIC, data)
+        print(f"Sent: {data}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    time.sleep(30)
