@@ -1,4 +1,4 @@
-.PHONY: help start stop logs producer consumer spark clean
+.PHONY: help start stop logs producer consumer spark airflow clean
 
 help:
 	@echo "=== Commandes disponibles ==="
@@ -8,6 +8,7 @@ help:
 	@echo "  make producer  - Lancer le producer météo"
 	@echo "  make consumer  - Voir les messages Kafka"
 	@echo "  make spark     - Lancer l'agrégation Spark"
+	@echo "  make airflow   - Déclencher le DAG Airflow"
 	@echo "  make clean     - Tout supprimer"
 
 start:
@@ -34,6 +35,11 @@ spark:
 		--master spark://spark-master:7077 \
 		--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \
 		/app/spark_weather_aggregation.py
+
+airflow:
+	@echo "🚀 Déclenchement du DAG Airflow..."
+	docker exec -it airflow airflow dags trigger weather_alert_to_hdfs
+	@echo "✅ DAG déclenché! Voir: http://localhost:8081"
 
 clean:
 	docker-compose down -v
